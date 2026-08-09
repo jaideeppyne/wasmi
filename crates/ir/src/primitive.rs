@@ -108,20 +108,32 @@ impl BranchTableTarget {
     }
 }
 
-/// A signed offset for branch instructions.
+/// The branching target of a branch operator.
 ///
-/// This defines how much the instruction pointer is offset
-/// upon taking the respective branch.
+/// # Note
+///
+/// This type has two distinct meanings depending on the translation phase:
+///
+/// - While a function is being translated it stores a signed byte offset relative to
+///   the start of the encoded item that carries it. Forward branches are positive and
+///   backward branches are negative.
+/// - Once the encoded operators have been moved into their final, address stable
+///   allocation the branch offsets are relocated into absolute addresses pointing
+///   directly at the targeted operator. This allows the executor to simply jump to
+///   the target instead of having to compute its address upon every taken branch.
+///
+/// [`Op`]: crate::Op
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct BranchOffset(i32);
+#[repr(transparent)]
+pub struct BranchOffset(isize);
 
-impl From<i32> for BranchOffset {
-    fn from(index: i32) -> Self {
+impl From<isize> for BranchOffset {
+    fn from(index: isize) -> Self {
         Self(index)
     }
 }
 
-impl From<BranchOffset> for i32 {
+impl From<BranchOffset> for isize {
     fn from(offset: BranchOffset) -> Self {
         offset.0
     }

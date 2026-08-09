@@ -181,7 +181,7 @@ macro_rules! impl_decode_using {
 impl_decode_using! {
     bool as u8 = |value| value != 0,
     Offset16 as u16 = Offset16,
-    BranchOffset as i32 = Into::into,
+    BranchOffset as isize = Into::into,
     Offset as OffsetRepr = Offset,
     BlockFuel as u64 = Into::into,
     FuncType as u32 = Into::into,

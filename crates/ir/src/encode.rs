@@ -101,7 +101,7 @@ impl Encode for BranchOffset {
     where
         E: Encoder,
     {
-        let pos = i32::from(*self).encode(encoder)?;
+        let pos = isize::from(*self).encode(encoder)?;
         encoder.branch_offset(pos, *self)?;
         Ok(pos)
     }
