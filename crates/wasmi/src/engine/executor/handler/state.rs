@@ -408,6 +408,23 @@ impl<'a> From<&'a [u8]> for Ip {
     }
 }
 
+impl From<ir::BranchOffset> for Ip {
+    /// Creates an [`Ip`] from the absolute branch `target`.
+    ///
+    /// # Note
+    ///
+    /// Branch operators store absolute branch targets after their function has
+    /// been translated which allows taken branches to simply jump to the target
+    /// instead of having to compute its address. Read more about this in
+    /// [`BranchOffset`](ir::BranchOffset).
+    #[inline]
+    fn from(target: ir::BranchOffset) -> Self {
+        Self {
+            value: ptr::with_exposed_provenance(isize::from(target) as usize),
+        }
+    }
+}
+
 impl Ip {
     /// Decodes a value of type `T` from the instruction stream at the [`Ip`].
     ///
@@ -472,25 +489,6 @@ impl Ip {
     pub unsafe fn skip<T: ir::Decode>(self) -> Ip {
         let (ip, _) = unsafe { self.decode::<T>() };
         ip
-    }
-
-    /// Returns a new [`Ip`] offset by `delta` bytes from this one.
-    ///
-    /// # Note
-    ///
-    /// - This method performs no bounds checking.
-    /// - A positive `delta` moves the pointer forward, a negative `delta` moves it backward.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that offsetting [`Ip`] by `delta` bytes does
-    /// not move it outside the valid bounds of the instruction sequence
-    /// and that any subsequent use of the returned [`Ip`] only reads from valid,
-    /// alive memory.
-    #[inline]
-    pub unsafe fn offset(self, delta: isize) -> Self {
-        let value = unsafe { self.value.byte_offset(delta) };
-        Self { value }
     }
 
     /// Returns a new [`Ip`] advanced by `delta` bytes.

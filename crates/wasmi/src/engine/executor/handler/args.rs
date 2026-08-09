@@ -133,10 +133,10 @@ impl Args {
         self.ip = new_ip;
     }
 
-    /// Offsets the [`Ip`] of `self` by `offset`.
+    /// Sets the [`Ip`] of `self` to the absolute branch `target`.
     #[inline]
-    pub fn offset_ip(&mut self, offset: BranchOffset) {
-        self.ip = unsafe { self.ip.offset(i32::from(offset) as isize) };
+    pub fn branch_to(&mut self, target: BranchOffset) {
+        self.ip = Ip::from(target);
     }
 
     /// Returns the bytes of the default memory at index 0.

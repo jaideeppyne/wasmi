@@ -32,7 +32,7 @@ use crate::{
     ir::{self, BoundedSlotSpan},
     store::{PrunedStore, StoreError},
 };
-use core::cmp;
+use core::{cmp, mem};
 
 fn identity<T>(value: T) -> T {
     value
@@ -96,8 +96,7 @@ execution_handler! {
     ) -> Done = {
         let mut args = Args::from_parts(ip, sp, mem0, mem0_len, instance, ireg, freg32, freg64);
         let crate::ir::decode::Branch { offset } = unsafe { args.decode_op() };
-        args.set_ip(ip);
-        args.offset_ip(offset);
+        args.branch_to(offset);
         dispatch!(store, args)
     }
 }
@@ -1061,10 +1060,11 @@ where
     Idx: GetValue<u32>,
 {
     let chosen_target = fetch_branch_table_target(args, index, len_targets);
-    let target_offset = 4 * chosen_target;
+    let len_encoded_target = mem::size_of::<ir::BranchOffset>();
+    let target_offset = len_encoded_target * chosen_target;
     args.set_ip(unsafe { args.ip.add(target_offset) });
     let (_, offset) = unsafe { args.ip.decode::<ir::BranchOffset>() };
-    args.offset_ip(offset);
+    args.branch_to(offset);
 }
 
 /// Executes a generic branch table operator that does not any copy values.
@@ -1078,11 +1078,8 @@ fn exec_branch_table_with_copies<Idx>(
     Idx: GetValue<u32>,
 {
     let chosen_target = fetch_branch_table_target(args, index, len_targets);
-    let len_encoded_target = match cfg!(feature = "indirect-dispatch") {
-        // TODO: add and use `Encode` trait assoc constants
-        true => 6,
-        false => 8,
-    };
+    // Note: each `BranchTableTarget` is encoded as tuple of compact `Slot` and `BranchOffset`.
+    let len_encoded_target = mem::size_of::<ir::Slot>() + mem::size_of::<ir::BranchOffset>();
     let target_offset = len_encoded_target * chosen_target;
     args.set_ip(unsafe { args.ip.add(target_offset) });
     let (_, ir::BranchTableTarget { results, offset }) =
@@ -1092,7 +1089,7 @@ fn exec_branch_table_with_copies<Idx>(
     if results != values {
         utils::exec_copy_span(args.sp, results, values, values_len);
     }
-    args.offset_ip(offset);
+    args.branch_to(offset);
 }
 
 macro_rules! impl_branch_table_exec_handler {
@@ -1822,8 +1819,7 @@ macro_rules! handler_cmp_branch {
                     let lhs = args.get(lhs);
                     let rhs = args.get(rhs);
                     if $eval(lhs, rhs) {
-                        args.set_ip(ip);
-                        args.offset_ip(offset);
+                        args.branch_to(offset);
                     }
                     dispatch!(store, args)
                 }
