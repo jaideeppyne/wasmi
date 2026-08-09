@@ -1,5 +1,6 @@
 use super::{EnforcedLimits, StackConfig};
 use crate::{
+    CustomFuelCosts,
     core::FuelCostsProvider,
     engine::{OperatorCost, OperatorCostStrategy},
 };
@@ -32,6 +33,8 @@ pub struct Config {
 }
 
 /// The chosen mode of Wasm to Wasmi bytecode compilation.
+///
+/// Can be configured using [`Config::compilation_mode`].
 #[derive(Debug, Default, Copy, Clone)]
 pub enum CompilationMode {
     /// The Wasm code is compiled eagerly to Wasmi bytecode.
@@ -413,8 +416,24 @@ impl Config {
         &self.operator_cost
     }
 
+    /// Configures the dynamic fuel cost.
+    ///
+    /// This affects the following areas:
+    ///
+    /// - Lazy translation and validation of functions.
+    ///     - For example if [`CompilationMode::Lazy`] or [`CompilationMode::LazyTranslation`] is used.
+    /// - Copying bytes or values in the following Wasm operator executions:
+    ///     - `memory.{grow,copy,fill,init}`
+    ///     - `table.{grow,copy,fill,init}`
+    ///
+    /// This is only relevant when [`Config::consume_fuel`] is enabled.
+    pub fn fuel_cost(&mut self, cost: CustomFuelCosts) -> &mut Self {
+        self.fuel_costs = FuelCostsProvider::custom(cost);
+        self
+    }
+
     /// Returns the configured [`FuelCostsProvider`].
-    pub(crate) fn fuel_costs(&self) -> &FuelCostsProvider {
+    pub(crate) fn get_fuel_costs(&self) -> &FuelCostsProvider {
         &self.fuel_costs
     }
 
