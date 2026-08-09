@@ -16,8 +16,6 @@ pub enum TranslationError {
     UnsupportedValueType(wasmparser::ValType),
     /// When using too many branch table targets.
     BranchTableTargetsOutOfBounds,
-    /// Branching offset out of bounds.
-    BranchOffsetOutOfBounds,
     /// Fuel required for a block is out of bounds.
     BlockFuelOutOfBounds,
     /// Tried to allocate more registers than possible.
@@ -71,7 +69,6 @@ impl Display for TranslationError {
             Self::BranchTableTargetsOutOfBounds => {
                 "branch table targets are out of bounds for wasmi bytecode"
             }
-            Self::BranchOffsetOutOfBounds => "branching offset is out of bounds for wasmi bytecode",
             Self::BlockFuelOutOfBounds => {
                 "fuel required to execute a block is out of bounds for wasmi bytecode"
             }
