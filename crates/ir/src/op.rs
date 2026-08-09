@@ -3,7 +3,6 @@ use crate::core::V128;
 #[cfg(feature = "simd")]
 use crate::core::simd::ImmLaneIdx;
 use crate::{
-    Zero,
     Address,
     BlockFuel,
     BoundedSlotSpan,
@@ -24,6 +23,7 @@ use crate::{
     SlotAndReg,
     Table0,
     TableAddr,
+    Zero,
     core::{ShiftAmount, TrapCode, ValType},
 };
 use core::num::NonZero;

@@ -693,13 +693,29 @@ impl TryIntoCmpBranchInstr for Op {
         // lower to eqz or nez
         let cmp_branch_instr = match cmp_branch_instr {
             | Op::BranchI32Eq_Ri { offset, rhs: 0, .. } => Op::branch_i32_eq_rz(offset),
-            | Op::BranchI32Eq_Si { offset, lhs, rhs: 0 } => Op::branch_i32_eq_sz(offset, lhs),
+            | Op::BranchI32Eq_Si {
+                offset,
+                lhs,
+                rhs: 0,
+            } => Op::branch_i32_eq_sz(offset, lhs),
             | Op::BranchI32NotEq_Ri { offset, rhs: 0, .. } => Op::branch_i32_not_eq_rz(offset),
-            | Op::BranchI32NotEq_Si { offset, lhs, rhs: 0 } => Op::branch_i32_not_eq_sz(offset, lhs),
+            | Op::BranchI32NotEq_Si {
+                offset,
+                lhs,
+                rhs: 0,
+            } => Op::branch_i32_not_eq_sz(offset, lhs),
             | Op::BranchI64Eq_Ri { offset, rhs: 0, .. } => Op::branch_i64_eq_rz(offset),
-            | Op::BranchI64Eq_Si { offset, lhs, rhs: 0 } => Op::branch_i64_eq_sz(offset, lhs),
+            | Op::BranchI64Eq_Si {
+                offset,
+                lhs,
+                rhs: 0,
+            } => Op::branch_i64_eq_sz(offset, lhs),
             | Op::BranchI64NotEq_Ri { offset, rhs: 0, .. } => Op::branch_i64_not_eq_rz(offset),
-            | Op::BranchI64NotEq_Si { offset, lhs, rhs: 0 } => Op::branch_i64_not_eq_sz(offset, lhs),
+            | Op::BranchI64NotEq_Si {
+                offset,
+                lhs,
+                rhs: 0,
+            } => Op::branch_i64_not_eq_sz(offset, lhs),
             op => op,
         };
         Some(cmp_branch_instr)
