@@ -140,16 +140,6 @@ impl From<BranchOffset> for isize {
 }
 
 impl BranchOffset {
-    /// Returns `true` if [`Self`] is an offset for a backward branch.
-    pub fn is_backwards(&self) -> bool {
-        self.0.is_negative()
-    }
-
-    /// Returns `true` if [`Self`] is an offset for a forward branch.
-    pub fn is_forwards(&self) -> bool {
-        self.0.is_positive()
-    }
-
     /// Returns `true` if the [`BranchOffset`] has been initialized.
     pub fn is_init(self) -> bool {
         self.0 != 0
