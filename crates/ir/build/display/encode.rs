@@ -3,6 +3,7 @@ use crate::build::{
     ident::SnakeCase,
     isa::Isa,
     op::{
+        FieldOrder,
         BinaryOp,
         BranchTableOp,
         CallIndirectOp,
@@ -98,7 +99,7 @@ macro_rules! impl_display_encode {
         $(
             impl Display for DisplayEncode<&'_ $ty> {
                 fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    let fields = self.value.fields().map(Option::from);
+                    let fields = self.value.fields(FieldOrder::Codec).map(Option::from);
                     self.display_encode(f, &fields)
                 }
             }

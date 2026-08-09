@@ -3,6 +3,7 @@ use crate::build::{
     ident::{Ident, SnakeCase},
     isa::Isa,
     op::{
+        FieldOrder,
         BinaryOp,
         BranchTableOp,
         CallIndirectOp,
@@ -124,7 +125,7 @@ macro_rules! impl_display_constructor {
         $(
             impl Display for DisplayConstructor<&'_ $ty> {
                 fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    let fields = self.value.fields().map(Option::from);
+                    let fields = self.value.fields(FieldOrder::Constructor).map(Option::from);
                     self.display_constructor(f, &fields)
                 }
             }

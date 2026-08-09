@@ -450,7 +450,7 @@ impl OpEncoder {
         T: ir::Encode + UpdateBranchTarget,
     {
         self.commit_staged_if_any()?;
-        let offset = self.try_resolve_label(dst)?;
+        let offset = self.try_resolve_label(dst);
         let item = make_branch(offset);
         let pos_item = self.encode_impl(item)?;
         let Some(ReportingPos::BranchTarget(pos_offset)) = self.ops.take_reporting_pos() else {

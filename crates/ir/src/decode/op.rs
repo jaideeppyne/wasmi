@@ -84,8 +84,8 @@ where
 #[derive(Copy, Clone)]
 pub struct CmpBranchOp<Lhs, Rhs> {
     pub offset: BranchTarget,
-    pub lhs: Lhs,
     pub rhs: Rhs,
+    pub lhs: Lhs,
 }
 
 impl<Lhs, Rhs> Decode for CmpBranchOp<Lhs, Rhs>
@@ -96,8 +96,8 @@ where
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         Ok(Self {
             offset: Decode::decode(decoder)?,
-            lhs: Decode::decode(decoder)?,
             rhs: Decode::decode(decoder)?,
+            lhs: Decode::decode(decoder)?,
         })
     }
 }

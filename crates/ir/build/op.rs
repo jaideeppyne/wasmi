@@ -133,6 +133,17 @@ impl<const N: usize> GenericOp<N> {
     }
 }
 
+/// The field order may affect the order of fields returned from `fields` methods.
+#[derive(Copy, Clone)]
+pub enum FieldOrder {
+    /// Order is for constructor parameters.
+    Constructor,
+    /// Order is for encode and decode implementations.
+    Codec,
+    /// Order if for struct fields.
+    Struct,
+}
+
 #[derive(Copy, Clone)]
 pub struct UnaryOp {
     pub ident: Ident,
@@ -167,7 +178,7 @@ impl UnaryOp {
         Field::new(Ident::Value, self.value.field_ty(self.value_ty))
     }
 
-    pub fn fields(&self) -> [Field; 2] {
+    pub fn fields(&self, _order: FieldOrder) -> [Field; 2] {
         [self.result_field(), self.value_field()]
     }
 }
@@ -220,7 +231,7 @@ impl BinaryOp {
         Field::new(Ident::Rhs, self.rhs.field_ty(self.rhs_ty))
     }
 
-    pub fn fields(&self) -> [Field; 3] {
+    pub fn fields(&self, _order: FieldOrder) -> [Field; 3] {
         [self.result_field(), self.lhs_field(), self.rhs_field()]
     }
 }
@@ -289,7 +300,7 @@ impl TernaryOp {
         Field::new(Ident::C, FieldTy::Slot)
     }
 
-    pub fn fields(&self) -> [Field; 4] {
+    pub fn fields(&self, _order: FieldOrder) -> [Field; 4] {
         [
             self.result_field(),
             self.a_field(),
@@ -363,8 +374,14 @@ impl CmpBranchOp {
         Field::new(Ident::Offset, FieldTy::BranchTarget)
     }
 
-    pub fn fields(&self) -> [Field; 3] {
-        [self.offset_field(), self.lhs_field(), self.rhs_field()]
+    pub fn fields(&self, order: FieldOrder) -> [Field; 3] {
+        let offset = self.offset_field();
+        let rhs = self.rhs_field();
+        let lhs = self.lhs_field();
+        match order {
+            FieldOrder::Codec => [offset, rhs, lhs],
+            _ => [offset, lhs, rhs],
+        }
     }
 }
 
@@ -402,7 +419,7 @@ impl BranchTableOp {
         }
     }
 
-    pub fn fields(&self) -> [Option<Field>; 3] {
+    pub fn fields(&self, _order: FieldOrder) -> [Option<Field>; 3] {
         [
             Some(self.len_targets_field()),
             Some(self.index_field()),
@@ -453,7 +470,7 @@ impl SelectOp {
         Field::new(Ident::FalseVal, self.false_val.field_ty(self.result_ty))
     }
 
-    pub fn fields(&self) -> [Field; 4] {
+    pub fn fields(&self, _order: FieldOrder) -> [Field; 4] {
         [
             self.result_field(),
             self.condition_field(),
@@ -550,7 +567,7 @@ impl LoadOp {
         }
     }
 
-    pub fn fields(&self) -> [Option<Field>; 4] {
+    pub fn fields(&self, _order: FieldOrder) -> [Option<Field>; 4] {
         [
             Some(self.result_field()),
             Some(self.ptr_field()),
@@ -678,7 +695,7 @@ impl StoreOp {
         }
     }
 
-    pub fn fields(&self) -> [Option<Field>; 5] {
+    pub fn fields(&self, _order: FieldOrder) -> [Option<Field>; 5] {
         [
             Some(self.ptr_field()),
             self.offset_field(),
@@ -763,7 +780,7 @@ impl GlobalGetOp {
         Field::new(Ident::Global, FieldTy::GlobalAddr)
     }
 
-    pub fn fields(&self) -> [Field; 2] {
+    pub fn fields(&self, _order: FieldOrder) -> [Field; 2] {
         [self.global_field(), self.result_field()]
     }
 }
@@ -790,7 +807,7 @@ impl GlobalSetOp {
         Field::new(Ident::Global, FieldTy::GlobalAddr)
     }
 
-    pub fn fields(&self) -> [Field; 2] {
+    pub fn fields(&self, _order: FieldOrder) -> [Field; 2] {
         [self.global_field(), self.value_field()]
     }
 }
@@ -822,7 +839,7 @@ impl TableGetOp {
         Field::new(Ident::Table, FieldTy::TableAddr)
     }
 
-    pub fn fields(&self) -> [Field; 3] {
+    pub fn fields(&self, _order: FieldOrder) -> [Field; 3] {
         [self.result_field(), self.index_field(), self.table_field()]
     }
 }
@@ -854,7 +871,7 @@ impl TableSetOp {
         Field::new(Ident::Table, FieldTy::TableAddr)
     }
 
-    pub fn fields(&self) -> [Field; 3] {
+    pub fn fields(&self, _order: FieldOrder) -> [Field; 3] {
         [self.table_field(), self.index_field(), self.value_field()]
     }
 }
@@ -912,7 +929,7 @@ impl CallIndirectOp {
         Field::new(Ident::Index, index_ty)
     }
 
-    pub fn fields(&self) -> [Field; 4] {
+    pub fn fields(&self, _order: FieldOrder) -> [Field; 4] {
         [
             self.table_field(),
             self.func_type_field(),
@@ -954,7 +971,7 @@ impl V128ExtractLaneOp {
         Field::new(Ident::Lane, self.ty.lane_ty())
     }
 
-    pub fn fields(&self) -> [Field; 3] {
+    pub fn fields(&self, _order: FieldOrder) -> [Field; 3] {
         [self.result_field(), self.value_field(), self.lane_field()]
     }
 }
@@ -1004,7 +1021,7 @@ impl ReplaceLaneOp {
         Field::new(Ident::Lane, self.ty.lane_ty())
     }
 
-    pub fn fields(&self) -> [Field; 4] {
+    pub fn fields(&self, _order: FieldOrder) -> [Field; 4] {
         [
             self.result_field(),
             self.v128_field(),
