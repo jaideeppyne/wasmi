@@ -12,7 +12,7 @@ use crate::{
     engine::{
         BlockType,
         translator::{
-            comparator::UpdateBranchOffset,
+            comparator::UpdateBranchTarget,
             func::{
                 ControlFrameBase,
                 LocalSetCodegen,
@@ -190,7 +190,7 @@ impl<'a> VisitOperator<'a> for FuncTranslator {
                 };
                 let else_label = self.instrs.new_label();
                 self.encode_branch_op(else_label, |offset| match fused_op {
-                    Some(fused_op) => fused_op.with_branch_offset(offset),
+                    Some(fused_op) => fused_op.with_branch_target(offset),
                     None => match condition {
                         Location::Reg(_) => Op::branch_i32_eq_rz(offset),
                         Location::Slot(condition) => Op::branch_i32_eq_sz(offset, condition),

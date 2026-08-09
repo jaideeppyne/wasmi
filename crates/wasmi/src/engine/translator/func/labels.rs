@@ -3,7 +3,7 @@ use crate::{
         encoder::{BytePos, Pos},
         utils::Reset,
     },
-    ir::{BranchOffset, Op},
+    ir::{BranchTarget, Op},
 };
 use alloc::vec::Vec;
 use core::{
@@ -91,8 +91,8 @@ struct LabelUser {
     dst: LabelRef,
     /// The generic branch source.
     src: BytePos,
-    /// The [`BranchOffset`] of `src` that needs to be updated once `dst` has been pinned.
-    pos: Pos<BranchOffset>,
+    /// The [`BranchTarget`] of `src` that needs to be updated once `dst` has been pinned.
+    pos: Pos<BranchTarget>,
 }
 
 /// An error that may occur while operating on the [`LabelRegistry`].
@@ -139,7 +139,7 @@ impl LabelRegistry {
     }
 
     /// Pushes a new label user to the [`LabelRegistry`] for deferred resolution.
-    pub fn new_user(&mut self, dst: LabelRef, src: BytePos, pos: Pos<BranchOffset>) {
+    pub fn new_user(&mut self, dst: LabelRef, src: BytePos, pos: Pos<BranchTarget>) {
         self.users.push(LabelUser { dst, src, pos })
     }
 
@@ -192,7 +192,7 @@ impl LabelRegistry {
         }
     }
 
-    /// Returns an iterator over pairs of user [`Pos<Op>`] and their [`BranchOffset`].
+    /// Returns an iterator over pairs of user [`Pos<Op>`] and their [`BranchTarget`].
     ///
     /// # Panics
     ///
@@ -220,7 +220,7 @@ pub struct ResolvedUserIter<'a> {
 pub struct ResolvedLabelUser {
     pub src: BytePos,
     pub dst: Pos<Op>,
-    pub pos: Pos<BranchOffset>,
+    pub pos: Pos<BranchTarget>,
 }
 
 impl Iterator for ResolvedUserIter<'_> {

@@ -1060,10 +1060,10 @@ where
     Idx: GetValue<u32>,
 {
     let chosen_target = fetch_branch_table_target(args, index, len_targets);
-    let len_encoded_target = mem::size_of::<ir::BranchOffset>();
+    let len_encoded_target = mem::size_of::<ir::BranchTarget>();
     let target_offset = len_encoded_target * chosen_target;
     args.set_ip(unsafe { args.ip.add(target_offset) });
-    let (_, offset) = unsafe { args.ip.decode::<ir::BranchOffset>() };
+    let (_, offset) = unsafe { args.ip.decode::<ir::BranchTarget>() };
     args.branch_to(offset);
 }
 
@@ -1078,8 +1078,8 @@ fn exec_branch_table_with_copies<Idx>(
     Idx: GetValue<u32>,
 {
     let chosen_target = fetch_branch_table_target(args, index, len_targets);
-    // Note: each `BranchTableTarget` is encoded as tuple of compact `Slot` and `BranchOffset`.
-    let len_encoded_target = mem::size_of::<ir::Slot>() + mem::size_of::<ir::BranchOffset>();
+    // Note: each `BranchTableTarget` is encoded as tuple of compact `Slot` and `BranchTarget`.
+    let len_encoded_target = mem::size_of::<ir::Slot>() + mem::size_of::<ir::BranchTarget>();
     let target_offset = len_encoded_target * chosen_target;
     args.set_ip(unsafe { args.ip.add(target_offset) });
     let (_, ir::BranchTableTarget { results, offset }) =

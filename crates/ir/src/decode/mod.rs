@@ -36,8 +36,8 @@ use crate::{
     Address,
     BlockFuel,
     BoundedSlotSpan,
-    BranchOffset,
     BranchTableTarget,
+    BranchTarget,
     FixedSlotSpan,
     Local,
     Offset,
@@ -131,7 +131,7 @@ impl<const N: u16> Decode for FixedSlotSpan<N> {
 impl Decode for BranchTableTarget {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let results = SlotSpan::decode(decoder)?;
-        let offset = BranchOffset::decode(decoder)?;
+        let offset = BranchTarget::decode(decoder)?;
         Ok(Self::new(results, offset))
     }
 }
@@ -181,7 +181,7 @@ macro_rules! impl_decode_using {
 impl_decode_using! {
     bool as u8 = |value| value != 0,
     Offset16 as u16 = Offset16,
-    BranchOffset as isize = Into::into,
+    BranchTarget as isize = Into::into,
     Offset as OffsetRepr = Offset,
     BlockFuel as u64 = Into::into,
     FuncType as u32 = Into::into,

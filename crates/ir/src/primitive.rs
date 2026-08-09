@@ -98,12 +98,12 @@ pub struct BranchTableTarget {
     /// The result stack slots of the branch target.
     pub results: SlotSpan,
     /// The offset to branch to for the target.
-    pub offset: BranchOffset,
+    pub offset: BranchTarget,
 }
 
 impl BranchTableTarget {
     /// Creates a new [`BranchTableTarget`] for `results` and `offset`.
-    pub fn new(results: SlotSpan, offset: BranchOffset) -> Self {
+    pub fn new(results: SlotSpan, offset: BranchTarget) -> Self {
         Self { results, offset }
     }
 }
@@ -125,38 +125,38 @@ impl BranchTableTarget {
 /// [`Op`]: crate::Op
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(transparent)]
-pub struct BranchOffset(isize);
+pub struct BranchTarget(isize);
 
-impl From<isize> for BranchOffset {
+impl From<isize> for BranchTarget {
     fn from(index: isize) -> Self {
         Self(index)
     }
 }
 
-impl From<BranchOffset> for isize {
-    fn from(offset: BranchOffset) -> Self {
+impl From<BranchTarget> for isize {
+    fn from(offset: BranchTarget) -> Self {
         offset.0
     }
 }
 
-impl BranchOffset {
-    /// Returns `true` if the [`BranchOffset`] has been initialized.
+impl BranchTarget {
+    /// Returns `true` if the [`BranchTarget`] has been initialized.
     pub fn is_init(self) -> bool {
         self.0 != 0
     }
 
-    /// Creates an uninitialized [`BranchOffset`].
+    /// Creates an uninitialized [`BranchTarget`].
     pub fn uninit() -> Self {
         Self(0)
     }
 
-    /// Initializes the [`BranchOffset`] with a proper value.
+    /// Initializes the [`BranchTarget`] with a proper value.
     ///
     /// # Panics
     ///
-    /// - If the [`BranchOffset`] have already been initialized.
-    /// - If the given [`BranchOffset`] is not properly initialized.
-    pub fn init(&mut self, valid_offset: BranchOffset) {
+    /// - If the [`BranchTarget`] have already been initialized.
+    /// - If the given [`BranchTarget`] is not properly initialized.
+    pub fn init(&mut self, valid_offset: BranchTarget) {
         assert!(valid_offset.is_init());
         assert!(!self.is_init());
         *self = valid_offset;

@@ -16,7 +16,7 @@ use crate::{
             utils::{self, GetValue, IntoControl as _, LoadEntity, SetValue, get_value, set_value},
         },
     },
-    ir::{self, BoundedSlotSpan, BranchOffset},
+    ir::{self, BoundedSlotSpan, BranchTarget},
     store::PrunedStore,
 };
 use core::ptr::NonNull;
@@ -135,7 +135,7 @@ impl Args {
 
     /// Sets the [`Ip`] of `self` to the absolute branch `target`.
     #[inline]
-    pub fn branch_to(&mut self, target: BranchOffset) {
+    pub fn branch_to(&mut self, target: BranchTarget) {
         self.ip = Ip::from(target);
     }
 

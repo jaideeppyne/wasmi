@@ -70,7 +70,7 @@ use crate::{
                 LogicalizeCmpInstr,
                 NegateCmpInstr,
                 TryIntoCmpBranchInstr as _,
-                UpdateBranchOffset as _,
+                UpdateBranchTarget as _,
             },
             func::{
                 op::BinaryOpRhs,
@@ -83,7 +83,7 @@ use crate::{
         self,
         Address,
         BoundedSlotSpan,
-        BranchOffset,
+        BranchTarget,
         FixedSlotSpan,
         Offset,
         Offset16,
@@ -198,7 +198,7 @@ impl WasmTranslator<'_> for FuncTranslator {
         mut self,
         finalize: impl FnOnce(CompiledFuncEntry),
     ) -> Result<Self::Allocations, Error> {
-        self.instrs.update_branch_offsets();
+        self.instrs.update_branch_targets();
         let len_local_slots = self.stack.get_local_slots();
         let Some(len_stack_slots) = self.len_stack_slots() else {
             return Err(Error::from(TranslationError::AllocatedTooManySlots));
@@ -207,7 +207,7 @@ impl WasmTranslator<'_> for FuncTranslator {
         //       allocation _before_ their branch offsets are relocated into absolute
         //       branch targets since relocation depends on the final address.
         let mut ops = <Box<[u8]>>::from(self.instrs.encoded_ops());
-        self.instrs.relocate_branch_offsets(&mut ops);
+        self.instrs.relocate_branch_targets(&mut ops);
         finalize(CompiledFuncEntry::new(
             len_local_slots,
             len_stack_slots,
@@ -1167,7 +1167,7 @@ impl FuncTranslator {
     fn encode_branch_op(
         &mut self,
         dst: LabelRef,
-        op: impl FnOnce(BranchOffset) -> Op,
+        op: impl FnOnce(BranchTarget) -> Op,
     ) -> Result<Pos<Op>, Error> {
         self.instrs.pad_to_op_alignment()?;
         let (pos, _) = self.instrs.encode_branch(dst, op)?;
@@ -1501,7 +1501,7 @@ impl FuncTranslator {
                 }
             },
         };
-        let fused_op_or_none = cmp_op.try_into_cmp_branch_instr(BranchOffset::uninit());
+        let fused_op_or_none = cmp_op.try_into_cmp_branch_instr(BranchTarget::uninit());
         Ok(fused_op_or_none)
     }
 
@@ -1524,7 +1524,7 @@ impl FuncTranslator {
     ) -> Result<(), Error> {
         if let Some(fused_op) = self.fused_cmp_branch(condition, branch_eqz)? {
             self.instrs.drop_staged();
-            self.encode_branch_op(label, |offset| fused_op.with_branch_offset(offset))?;
+            self.encode_branch_op(label, |offset| fused_op.with_branch_target(offset))?;
             return Ok(());
         }
         let condition = match self.resolve_operand::<i32>(condition)? {

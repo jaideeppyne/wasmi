@@ -408,7 +408,7 @@ impl<'a> From<&'a [u8]> for Ip {
     }
 }
 
-impl From<ir::BranchOffset> for Ip {
+impl From<ir::BranchTarget> for Ip {
     /// Creates an [`Ip`] from the absolute branch `target`.
     ///
     /// # Note
@@ -416,9 +416,9 @@ impl From<ir::BranchOffset> for Ip {
     /// Branch operators store absolute branch targets after their function has
     /// been translated which allows taken branches to simply jump to the target
     /// instead of having to compute its address. Read more about this in
-    /// [`BranchOffset`](ir::BranchOffset).
+    /// [`BranchTarget`](ir::BranchTarget).
     #[inline]
-    fn from(target: ir::BranchOffset) -> Self {
+    fn from(target: ir::BranchTarget) -> Self {
         Self {
             value: ptr::with_exposed_provenance(isize::from(target) as usize),
         }

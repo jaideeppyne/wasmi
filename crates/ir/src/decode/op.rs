@@ -5,7 +5,7 @@ use crate::core::simd::ImmLaneIdx;
 use crate::{
     Address,
     BoundedSlotSpan,
-    BranchOffset,
+    BranchTarget,
     Decode,
     Decoder,
     FuncType,
@@ -83,7 +83,7 @@ where
 
 #[derive(Copy, Clone)]
 pub struct CmpBranchOp<Lhs, Rhs> {
-    pub offset: BranchOffset,
+    pub offset: BranchTarget,
     pub lhs: Lhs,
     pub rhs: Rhs,
 }

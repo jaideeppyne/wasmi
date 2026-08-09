@@ -4,8 +4,8 @@ use crate::{
     Address,
     BlockFuel,
     BoundedSlotSpan,
-    BranchOffset,
     BranchTableTarget,
+    BranchTarget,
     DataAddr,
     ElemAddr,
     FixedSlotSpan,
@@ -54,18 +54,18 @@ pub trait Encoder {
     /// either encoded as function pointer or as `u16` value respectively.
     fn encode_op_code(&mut self, code: OpCode) -> Result<Self::Pos, Self::Error>;
 
-    /// Registers an encoded [`BranchOffset`] to the encoder.
+    /// Registers an encoded [`BranchTarget`] to the encoder.
     ///
     /// This is required in order to update the branch offsets of
     /// branch operators once all forward branch offsets are known.
     ///
     /// # Errors
     ///
-    /// If the encoder cannot register the `branch_offset`.
-    fn branch_offset(
+    /// If the encoder cannot register the `branch_target`.
+    fn branch_target(
         &mut self,
         pos: Self::Pos,
-        branch_offset: BranchOffset,
+        branch_target: BranchTarget,
     ) -> Result<(), Self::Error>;
 
     /// Registers an encoded [`BlockFuel`] to the encoder.
@@ -96,13 +96,13 @@ impl Encode for OpCode {
     }
 }
 
-impl Encode for BranchOffset {
+impl Encode for BranchTarget {
     fn encode<E>(&self, encoder: &mut E) -> Result<E::Pos, E::Error>
     where
         E: Encoder,
     {
         let pos = isize::from(*self).encode(encoder)?;
-        encoder.branch_offset(pos, *self)?;
+        encoder.branch_target(pos, *self)?;
         Ok(pos)
     }
 }

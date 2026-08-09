@@ -360,7 +360,7 @@ impl CmpBranchOp {
     }
 
     pub fn offset_field(&self) -> Field {
-        Field::new(Ident::Offset, FieldTy::BranchOffset)
+        Field::new(Ident::Offset, FieldTy::BranchTarget)
     }
 
     pub fn fields(&self) -> [Field; 3] {

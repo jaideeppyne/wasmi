@@ -6,7 +6,7 @@ use crate::{
         TranslationError,
         executor::op_code_to_handler,
         translator::{
-            comparator::UpdateBranchOffset,
+            comparator::UpdateBranchTarget,
             func::{
                 LabelRef,
                 LabelRegistry,
@@ -14,7 +14,7 @@ use crate::{
             },
         },
     },
-    ir::{self, BlockFuel, BranchOffset, Decode as _, Encode as _, Op, OpCode},
+    ir::{self, BlockFuel, BranchTarget, Decode as _, Encode as _, Op, OpCode},
 };
 use alloc::vec::Vec;
 use core::{cmp, fmt, iter, marker::PhantomData};
@@ -94,32 +94,32 @@ impl<T> fmt::Debug for Pos<T> {
 pub struct EncodedOps {
     buffer: Vec<u8>,
     temp: Option<ReportingPos>,
-    /// The positions of all encoded [`BranchOffset`]s and their branch operators.
+    /// The positions of all encoded [`BranchTarget`]s and their branch operators.
     ///
     /// # Note
     ///
-    /// This is required to relocate all encoded [`BranchOffset`]s into absolute
+    /// This is required to relocate all encoded [`BranchTarget`]s into absolute
     /// branch targets once the encoded operators reside in their final, address
-    /// stable allocation. Read more about this in [`EncodedOps::relocate_branch_offsets`].
-    branch_offsets: Vec<EncodedBranchOffset>,
+    /// stable allocation. Read more about this in [`EncodedOps::relocate_branch_targets`].
+    branch_targets: Vec<EncodedBranchTarget>,
 }
 
-/// The position of an encoded [`BranchOffset`] and of its branch operator.
+/// The position of an encoded [`BranchTarget`] and of its branch operator.
 #[derive(Debug, Copy, Clone)]
-struct EncodedBranchOffset {
-    /// The position of the encoded item that stores the [`BranchOffset`].
+struct EncodedBranchTarget {
+    /// The position of the encoded item that stores the [`BranchTarget`].
     ///
-    /// This is the position that the [`BranchOffset`] is relative to.
+    /// This is the position that the [`BranchTarget`] is relative to.
     src: BytePos,
-    /// The position of the encoded [`BranchOffset`] itself.
-    pos: Pos<BranchOffset>,
+    /// The position of the encoded [`BranchTarget`] itself.
+    pos: Pos<BranchTarget>,
 }
 
 /// A [`Pos`] of an encoded item that needs to be reported back.
 #[derive(Debug)]
 enum ReportingPos {
-    /// The temporary object is a [`BranchOffset`].
-    BranchOffset(Pos<BranchOffset>),
+    /// The temporary object is a [`BranchTarget`].
+    BranchTarget(Pos<BranchTarget>),
     /// The temporary object is a [`BlockFuel`].
     BlockFuel(Pos<BlockFuel>),
 }
@@ -127,7 +127,7 @@ enum ReportingPos {
 impl Reset for EncodedOps {
     fn reset(&mut self) {
         self.buffer.clear();
-        self.branch_offsets.clear();
+        self.branch_targets.clear();
     }
 }
 
@@ -144,9 +144,9 @@ impl EncodedOps {
         self.temp.take()
     }
 
-    /// Registers the encoded [`BranchOffset`] at `pos` of the branch operator at `src`.
-    fn register_branch_offset(&mut self, src: BytePos, pos: Pos<BranchOffset>) {
-        self.branch_offsets.push(EncodedBranchOffset { src, pos });
+    /// Registers the encoded [`BranchTarget`] at `pos` of the branch operator at `src`.
+    fn register_branch_target(&mut self, src: BytePos, pos: Pos<BranchTarget>) {
+        self.branch_targets.push(EncodedBranchTarget { src, pos });
     }
 
     /// Truncates the buffer to `pos`.
@@ -158,11 +158,11 @@ impl EncodedOps {
         self.buffer.truncate(new_len);
         // Note: branch operators are never staged and thus never truncated.
         //       This merely guards against future changes to this invariant.
-        while let Some(last) = self.branch_offsets.last() {
+        while let Some(last) = self.branch_targets.last() {
             if BytePos::from(last.pos).0 < new_len {
                 break;
             }
-            self.branch_offsets.pop();
+            self.branch_targets.pop();
         }
     }
 }
@@ -184,13 +184,13 @@ impl ir::Encoder for EncodedOps {
         encode_op_code(self, code)
     }
 
-    fn branch_offset(
+    fn branch_target(
         &mut self,
         pos: Self::Pos,
-        _branch_offset: BranchOffset,
+        _branch_target: BranchTarget,
     ) -> Result<(), Self::Error> {
         debug_assert!(self.temp.is_none());
-        self.temp = Some(ReportingPos::BranchOffset(pos.into()));
+        self.temp = Some(ReportingPos::BranchTarget(pos.into()));
         Ok(())
     }
 
@@ -327,22 +327,22 @@ impl OpEncoder {
         Ok(())
     }
 
-    /// Resolves the [`BranchOffset`] to `lref` from the current encoded bytestream position if `lref` is pinned.
+    /// Resolves the [`BranchTarget`] to `lref` from the current encoded bytestream position if `lref` is pinned.
     ///
     ///
     /// # Note
     ///
-    /// Returns an uninitialized [`BranchOffset`] if `lref` refers to an unpinned [`Label`].
+    /// Returns an uninitialized [`BranchTarget`] if `lref` refers to an unpinned [`Label`].
     ///
     /// # Panics
     ///
     /// If there is a staged [`Op`].
-    fn try_resolve_label(&mut self, lref: LabelRef) -> BranchOffset {
+    fn try_resolve_label(&mut self, lref: LabelRef) -> BranchTarget {
         assert!(self.staged.is_none());
         let src = self.ops.next_pos();
         match self.labels.get_label(lref) {
-            Label::Pinned(dst) => trace_branch_offset(src, dst),
-            Label::Unpinned => BranchOffset::uninit(),
+            Label::Pinned(dst) => trace_branch_target(src, dst),
+            Label::Unpinned => BranchTarget::uninit(),
         }
     }
 
@@ -371,7 +371,7 @@ impl OpEncoder {
     ///
     /// # Panics (Debug)
     ///
-    /// If the staged operator unexpectedly issued [`BranchOffset`] or [`BlockFuel`] fields.
+    /// If the staged operator unexpectedly issued [`BranchTarget`] or [`BlockFuel`] fields.
     /// Those operators may never be staged and must be taken care of directly.
     pub fn commit_staged_if_any(&mut self) -> Result<(), Error> {
         self.staged = None;
@@ -440,24 +440,24 @@ impl OpEncoder {
         Ok(Some(pos))
     }
 
-    /// Encodes a type with [`BranchOffset`] to the [`OpEncoder`] and returns its [`Pos<Op>`] and [`Pos<BranchOffset>`].
+    /// Encodes a type with [`BranchTarget`] to the [`OpEncoder`] and returns its [`Pos<Op>`] and [`Pos<BranchTarget>`].
     pub fn encode_branch<T>(
         &mut self,
         dst: LabelRef,
-        make_branch: impl FnOnce(BranchOffset) -> T,
-    ) -> Result<(Pos<T>, Pos<BranchOffset>), Error>
+        make_branch: impl FnOnce(BranchTarget) -> T,
+    ) -> Result<(Pos<T>, Pos<BranchTarget>), Error>
     where
-        T: ir::Encode + UpdateBranchOffset,
+        T: ir::Encode + UpdateBranchTarget,
     {
         self.commit_staged_if_any()?;
         let offset = self.try_resolve_label(dst)?;
         let item = make_branch(offset);
         let pos_item = self.encode_impl(item)?;
-        let Some(ReportingPos::BranchOffset(pos_offset)) = self.ops.take_reporting_pos() else {
-            unreachable!("expected encoded position for `BranchOffset` entry but found none");
+        let Some(ReportingPos::BranchTarget(pos_offset)) = self.ops.take_reporting_pos() else {
+            unreachable!("expected encoded position for `BranchTarget` entry but found none");
         };
         self.ops
-            .register_branch_offset(BytePos::from(pos_item), pos_offset);
+            .register_branch_target(BytePos::from(pos_item), pos_offset);
         if !self.labels.is_pinned(dst) {
             self.labels
                 .new_user(dst, BytePos::from(pos_item), pos_offset);
@@ -536,28 +536,28 @@ impl OpEncoder {
     /// # Panics
     ///
     /// If this is used before all branching labels have been pinned.
-    pub fn update_branch_offsets(&mut self) {
+    pub fn update_branch_targets(&mut self) {
         for user in self.labels.resolved_users() {
             let ResolvedLabelUser { src, dst, pos } = user;
-            let offset = trace_branch_offset(src, dst);
-            self.ops.update_branch_offset(pos, offset);
+            let offset = trace_branch_target(src, dst);
+            self.ops.update_branch_target(pos, offset);
         }
     }
 
-    /// Relocates all encoded [`BranchOffset`]s in `ops` into absolute branch targets.
+    /// Relocates all encoded [`BranchTarget`]s in `ops` into absolute branch targets.
     ///
     /// # Note
     ///
     /// - `ops` must be the final, address stable allocation storing a copy of the
-    ///   encoded operators of `self`. Read more about this in [`BranchOffset`].
-    /// - Must be called after [`OpEncoder::update_branch_offsets`] so that all
+    ///   encoded operators of `self`. Read more about this in [`BranchTarget`].
+    /// - Must be called after [`OpEncoder::update_branch_targets`] so that all
     ///   forward branch offsets are known.
     ///
     /// # Panics
     ///
-    /// If a registered [`BranchOffset`] position is out of bounds for `ops`.
-    pub fn relocate_branch_offsets(&self, ops: &mut [u8]) {
-        self.ops.relocate_branch_offsets(ops);
+    /// If a registered [`BranchTarget`] position is out of bounds for `ops`.
+    pub fn relocate_branch_targets(&self, ops: &mut [u8]) {
+        self.ops.relocate_branch_targets(ops);
     }
 }
 
@@ -618,49 +618,49 @@ enum UpdateEncodedErrorKind {
 }
 
 impl EncodedOps {
-    /// Updates the encoded [`BranchOffset`] at `pos` to `offset`.
+    /// Updates the encoded [`BranchTarget`] at `pos` to `offset`.
     ///
     /// # Panics
     ///
     /// - If `pos` was out of bounds for `self`.
-    /// - If the [`BranchOffset`] at `pos` failed to be decoded, updated or re-encoded.
-    pub fn update_branch_offset(&mut self, pos: Pos<BranchOffset>, offset: BranchOffset) {
+    /// - If the [`BranchTarget`] at `pos` failed to be decoded, updated or re-encoded.
+    pub fn update_branch_target(&mut self, pos: Pos<BranchTarget>, offset: BranchTarget) {
         self.update_encoded(pos, |_| Some(offset));
     }
 
-    /// Relocates all encoded [`BranchOffset`]s in `ops` into absolute branch targets.
+    /// Relocates all encoded [`BranchTarget`]s in `ops` into absolute branch targets.
     ///
     /// # Note
     ///
     /// The `ops` buffer must be a copy of `self`'s encoded operators that resides
-    /// in its final, address stable allocation. Since all encoded [`BranchOffset`]s
+    /// in its final, address stable allocation. Since all encoded [`BranchTarget`]s
     /// are relative to the encoded item that stores them, their absolute branch
     /// target simply is `ops.as_ptr() + src + offset`.
     ///
     /// # Panics
     ///
-    /// If a registered [`BranchOffset`] position is out of bounds for `ops`.
-    fn relocate_branch_offsets(&self, ops: &mut [u8]) {
+    /// If a registered [`BranchTarget`] position is out of bounds for `ops`.
+    fn relocate_branch_targets(&self, ops: &mut [u8]) {
         debug_assert_eq!(self.buffer.len(), ops.len());
         // Note: the pointer's provenance is exposed here since the executor
         //       restores it via `ptr::with_exposed_provenance` upon branching.
         //       This mirrors how op-code handler pointers are encoded when the
         //       `indirect-dispatch` crate feature is disabled.
         let base = ops.as_mut_ptr().expose_provenance();
-        for &EncodedBranchOffset { src, pos } in &self.branch_offsets {
+        for &EncodedBranchTarget { src, pos } in &self.branch_targets {
             let at = usize::from(BytePos::from(pos));
             let Some(buffer) = ops.get_mut(at..) else {
                 panic!("branch offset position is out of bounds: {at}")
             };
-            let Ok(offset) = BranchOffset::decode(&mut &buffer[..]) else {
-                panic!("failed to decode `BranchOffset` at: {at}")
+            let Ok(offset) = BranchTarget::decode(&mut &buffer[..]) else {
+                panic!("failed to decode `BranchTarget` at: {at}")
             };
             // Note: an offset of 0 is a valid backwards branch, e.g. for `(loop (br 0))`,
-            //       thus `BranchOffset::is_init` must not be asserted here.
+            //       thus `BranchTarget::is_init` must not be asserted here.
             let target = base
                 .wrapping_add(usize::from(src))
                 .wrapping_add_signed(isize::from(offset));
-            let target = BranchOffset::from(target as isize);
+            let target = BranchTarget::from(target as isize);
             if target.encode(&mut SliceEncoder::from(buffer)).is_err() {
                 panic!("failed to encode branch target at: {at}")
             }
@@ -751,10 +751,10 @@ impl<'a> ir::Encoder for SliceEncoder<'a> {
         encode_op_code(self, code)
     }
 
-    fn branch_offset(
+    fn branch_target(
         &mut self,
         _pos: Self::Pos,
-        _branch_offset: BranchOffset,
+        _branch_target: BranchTarget,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -786,16 +786,16 @@ fn encode_op_code<E: ir::Encoder>(encoder: &mut E, code: OpCode) -> Result<E::Po
     }
 }
 
-/// Creates an initialized [`BranchOffset`] from `src` to `dst`.
+/// Creates an initialized [`BranchTarget`] from `src` to `dst`.
 ///
 /// # Note
 ///
-/// [`BranchOffset`] is as wide as a pointer and thus can encode any offset within
+/// [`BranchTarget`] is as wide as a pointer and thus can encode any offset within
 /// the encoded operators buffer. Therefore this operation cannot fail.
-fn trace_branch_offset(src: BytePos, dst: Pos<Op>) -> BranchOffset {
+fn trace_branch_target(src: BytePos, dst: Pos<Op>) -> BranchTarget {
     // Note: Rust limits allocations to `isize::MAX` bytes, thus both byte
     //       positions always fit into an `isize` and cannot overflow.
     let src = usize::from(src) as isize;
     let dst = usize::from(BytePos::from(dst)) as isize;
-    BranchOffset::from(dst.wrapping_sub(src))
+    BranchTarget::from(dst.wrapping_sub(src))
 }

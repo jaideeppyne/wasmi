@@ -37,8 +37,8 @@ pub use self::{
     primitive::{
         Address,
         BlockFuel,
-        BranchOffset,
         BranchTableTarget,
+        BranchTarget,
         Local,
         Offset,
         Offset16,

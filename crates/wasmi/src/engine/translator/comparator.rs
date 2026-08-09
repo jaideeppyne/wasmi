@@ -1,4 +1,4 @@
-use crate::ir::{self, BranchOffset, Op};
+use crate::ir::{self, BranchTarget, Op};
 
 pub trait NegateCmpInstr: Sized {
     /// Negates the compare (`cmp`) [`Op`].
@@ -477,11 +477,11 @@ impl LogicalizeCmpInstr for Op {
 }
 
 pub trait TryIntoCmpBranchInstr: Sized {
-    fn try_into_cmp_branch_instr(&self, offset: BranchOffset) -> Option<Self>;
+    fn try_into_cmp_branch_instr(&self, offset: BranchTarget) -> Option<Self>;
 }
 
 impl TryIntoCmpBranchInstr for Op {
-    fn try_into_cmp_branch_instr(&self, offset: BranchOffset) -> Option<Self> {
+    fn try_into_cmp_branch_instr(&self, offset: BranchTarget) -> Option<Self> {
         #[rustfmt::skip]
         let cmp_branch_instr = match *self {
             // i32
@@ -722,39 +722,39 @@ impl TryIntoCmpBranchInstr for Op {
     }
 }
 
-/// Extension trait for [`Op`] to update [`BranchOffset`] of branch operators.
-pub trait UpdateBranchOffset: Sized {
-    /// Updates the [`BranchOffset`] of `self` to `new_offset`.
+/// Extension trait for [`Op`] to update [`BranchTarget`] of branch operators.
+pub trait UpdateBranchTarget: Sized {
+    /// Updates the [`BranchTarget`] of `self` to `new_offset`.
     ///
     /// # Panics
     ///
-    /// - If `self` does not have a [`BranchOffset`] to update.
-    /// - If the [`BranchOffset`] of `self` is already initialized. (Debug)
-    fn update_branch_offset(&mut self, new_offset: BranchOffset);
+    /// - If `self` does not have a [`BranchTarget`] to update.
+    /// - If the [`BranchTarget`] of `self` is already initialized. (Debug)
+    fn update_branch_target(&mut self, new_offset: BranchTarget);
 
-    /// Consumes `self` and returns it back with its [`BranchOffset`] set to `new_offset`.
-    fn with_branch_offset(self, new_offset: BranchOffset) -> Self {
+    /// Consumes `self` and returns it back with its [`BranchTarget`] set to `new_offset`.
+    fn with_branch_target(self, new_offset: BranchTarget) -> Self {
         let mut this = self;
-        this.update_branch_offset(new_offset);
+        this.update_branch_target(new_offset);
         this
     }
 }
 
-impl UpdateBranchOffset for ir::BranchOffset {
-    fn update_branch_offset(&mut self, new_offset: BranchOffset) {
+impl UpdateBranchTarget for ir::BranchTarget {
+    fn update_branch_target(&mut self, new_offset: BranchTarget) {
         *self = new_offset;
     }
 }
 
-impl UpdateBranchOffset for ir::BranchTableTarget {
-    fn update_branch_offset(&mut self, new_offset: BranchOffset) {
+impl UpdateBranchTarget for ir::BranchTableTarget {
+    fn update_branch_target(&mut self, new_offset: BranchTarget) {
         self.offset = new_offset;
     }
 }
 
-impl UpdateBranchOffset for Op {
+impl UpdateBranchTarget for Op {
     #[track_caller]
-    fn update_branch_offset(&mut self, new_offset: BranchOffset) {
+    fn update_branch_target(&mut self, new_offset: BranchTarget) {
         match self {
             // unconditional
 

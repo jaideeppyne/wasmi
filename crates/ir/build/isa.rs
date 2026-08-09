@@ -525,7 +525,7 @@ fn add_control_ops(isa: &mut Isa) {
         )),
         Op::from(GenericOp::new(
             Ident::Branch,
-            [Field::new(Ident::Offset, FieldTy::BranchOffset)],
+            [Field::new(Ident::Offset, FieldTy::BranchTarget)],
         )),
         Op::from(BranchTableOp::new(
             BranchTableCopies::None,

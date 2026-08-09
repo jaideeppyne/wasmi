@@ -6,7 +6,7 @@ use crate::{
     Address,
     BlockFuel,
     BoundedSlotSpan,
-    BranchOffset,
+    BranchTarget,
     DataAddr,
     ElemAddr,
     FixedSlotSpan,
