@@ -230,7 +230,7 @@ impl FieldTy {
     pub fn is_unit(&self) -> bool {
         matches!(
             self,
-            Self::Local(_) | Self::Table0 | Self::RegInt | Self::RegF32 | Self::RegF64
+            Self::Local(_) | Self::Table0 | Self::RegInt | Self::RegF32 | Self::RegF64 | Self::Zero
         )
     }
 }
