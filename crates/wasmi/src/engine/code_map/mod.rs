@@ -970,11 +970,10 @@ impl CompiledFuncEntry {
     ///
     /// # Panics
     ///
-    /// - If `ops` is empty.
-    /// - If `ops` contains more than `i32::MAX` encoded bytes.
-    pub fn new(len_local_slots: u16, len_stack_slots: u16, ops: &[u8]) -> Self {
+    /// If `ops` is empty.
+    pub fn new(len_local_slots: u16, len_stack_slots: u16, ops: Box<[u8]>) -> Self {
         debug_assert!(len_local_slots <= len_stack_slots);
-        let ops: Pin<Box<[u8]>> = Pin::new(ops.into());
+        let ops: Pin<Box<[u8]>> = Pin::new(ops);
         debug_assert!(
             !ops.is_empty(),
             "compiled functions must have at least one instruction"

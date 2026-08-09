@@ -95,7 +95,7 @@ use crate::{
     limits::LimitsError,
     module::{FuncIdx, FuncTypeIdx, MemoryIdx, ModuleHeader, WasmiValueType},
 };
-use alloc::vec::Vec;
+use alloc::{boxed::Box, vec::Vec};
 use core::{convert::identity, mem};
 use wasmparser::{MemArg, WasmFeatures};
 
@@ -198,21 +198,20 @@ impl WasmTranslator<'_> for FuncTranslator {
         mut self,
         finalize: impl FnOnce(CompiledFuncEntry),
     ) -> Result<Self::Allocations, Error> {
-        // Note: `update_branch_offsets` might change `frame_size` so we need to compute it prior.
-        //
-        // Context:
-        // This only happens if the function has so many instructions that some conditional branch
-        // operators need to be encoded as their fallbacks which requires to allocate more function
-        // local constant values, thus increasing the size of the function frame.
-        self.instrs.update_branch_offsets()?;
+        self.instrs.update_branch_offsets();
         let len_local_slots = self.stack.get_local_slots();
         let Some(len_stack_slots) = self.len_stack_slots() else {
             return Err(Error::from(TranslationError::AllocatedTooManySlots));
         };
+        // Note: the encoded operators are moved into their final, address stable
+        //       allocation _before_ their branch offsets are relocated into absolute
+        //       branch targets since relocation depends on the final address.
+        let mut ops = <Box<[u8]>>::from(self.instrs.encoded_ops());
+        self.instrs.relocate_branch_offsets(&mut ops);
         finalize(CompiledFuncEntry::new(
             len_local_slots,
             len_stack_slots,
-            self.instrs.encoded_ops(),
+            ops,
         ));
         Ok(self.into_allocations())
     }
