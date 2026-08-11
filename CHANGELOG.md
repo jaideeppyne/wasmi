@@ -35,6 +35,7 @@ For the complete, PR-by-PR record please refer to the respective beta release en
 #### A completely new interpreter core
 
 - Wasmi has an entirely new internal IR and executor. 🚀 [#1655]
+  - Benchmarks conclude that Wasmi v2.0 is geomean roughly 2.2x faster than Wasmi v1.0.
 - Wasmi IR operators now store their results in **accumulator registers**, the same
   interpreter architecture used by the fastest Wasm interpreters, Wasm3 and Stitch.
   - PRs: [#1827] [#1855]
