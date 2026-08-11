@@ -8,6 +8,145 @@ Additionally we have an `Internal` section for changes that are of interest to d
 
 Dates in this file are formattes as `YYYY-MM-DD`.
 
+## `2.0.0` - 2026-08-11
+
+Upgrading from Wasmi `1.x`? Please refer to the
+[Wasmi v1 to v2 migration guide](./docs/migration-v1-to-v2.md)
+which lists all the changes that require action from users.
+
+Wasmi `2.0.0` includes all changes of the `2.0.0-beta.0` up to `2.0.0-beta.10` releases.
+Since those are far too many to repeat here, this entry only lists the highlights.
+For the complete, PR-by-PR record please refer to the respective beta release entries:
+
+- [Wasmi v2.0.0-beta.10]
+- [Wasmi v2.0.0-beta.9]
+- [Wasmi v2.0.0-beta.8]
+- [Wasmi v2.0.0-beta.7]
+- [Wasmi v2.0.0-beta.6]
+- [Wasmi v2.0.0-beta.5]
+- [Wasmi v2.0.0-beta.4]
+- [Wasmi v2.0.0-beta.3]
+- [Wasmi v2.0.0-beta.2]
+- [Wasmi v2.0.0-beta.1]
+- [Wasmi v2.0.0-beta.0]
+
+### Highlights
+
+#### A completely new interpreter core
+
+- Wasmi has an entirely new internal IR and executor. 🚀 [#1655]
+- Wasmi IR operators now store their results in **accumulator registers**, the same
+  interpreter architecture used by the fastest Wasm interpreters, Wasm3 and Stitch.
+  - PRs: [#1827] [#1855]
+  - Benchmarks concluded that Wasmi is on par and sometimes even exceeds performance
+    of its competition now.
+- Wasmi's executor now uses fixed 64-bit cells. [#1755]
+  - Enabling the `simd` crate feature no longer affects memory consumption or
+    execution performance of non-`simd` Wasm code.
+- Operator dispatch is tail-call based on targets that are known to support it and
+  falls back to the portable (loop-based) dispatch automatically via the new
+  default-enabled `auto-dispatch` crate feature. [#1968]
+- Re-designed `CodeMap` to be lock-free and append-only and stopped zero-initializing
+  function parameters, both significantly improving Wasm to Wasm call performance.
+  - PRs: [#1898] [#1893] [#2014]
+- A new `InstanceEntity` layout plus caching greatly improved access to all instance related
+  data, namely `Func`, `Global`, `Memory`, `Table`, `Data` and `Elem`.
+  - PRs: [#1940] [#1996] [#1997]
+  - Despite Wasmi's module independent bytecode, instance access is now as efficient as in
+    Wasm3's or Stitch'es executors with their instance-related bytecodes.
+  - The `count/globals` benchmark improved by a whopping ~35%.
+
+#### Memory consumption
+
+- `wasmi::Table` elements shrank from 64-bit (or even 128-bit with the `simd` crate feature
+  enabled) to flat 32-bit references, shrinking Wasm tables by a factor of 2-4x.
+  - PRs: [#1747] [#1776]
+
+#### Binary artifact size
+
+- Added a new `validate` crate feature that controls whether Wasmi supports Wasm validation. [#1902]
+  - Users who have full control over the Wasm inputs to Wasmi can reduce binary artifact
+    sizes by ~200-300kB by disabling it.
+- Support for `memory64` is now optional via the `memory64` crate feature. [#1934]
+- Richer `Op` debug output moved behind a new, default-disabled `debug` crate feature and
+  generic monomorphization in translation was replaced by explicit V-Tables.
+  - PRs: [#1959] [#1961] [#1960]
+
+#### Fuel metering
+
+- Wasmi's fuel metering is now stable: it is tied to the input Wasm bytecode instead of
+  Wasmi's internal bytecode. [#2013]
+  - While less precise, it stays relatively stable and is the same technique
+    that is also used in Wasmtime.
+- Fuel costs can now be customized via the new `Config::operator_cost` and
+  `Config::fuel_cost` APIs. [#2025]
+
+#### Features & configuration
+
+- Added support for the Wasm deterministic profile via the new `deterministic` crate feature. [#1947]
+- Added a `Config` option to disallow running the `start` function of Wasm modules. [#1985]
+- Added a new `libm` crate feature to enforce `libm` usage. [#1860]
+- Added a new `unstable` crate feature which enables Rust's unstable `become` keyword to
+  enforce tail calls in Wasmi's operator dispatch on nightly Rust. [#1825]
+- Added richer error information to Wasm module instantiation errors. [#1962] [#1963]
+- The Wasmi C-API now forwards most crate features exposed by `wasmi`, including
+  `portable-dispatch`, and properly supports `no_std`.
+  - PRs: [#1951] [#1950] [#1915]
+
+#### CLI
+
+- The Wasmi CLI command has been renamed from `wasmi_cli` to just `wasmi` and, similar to
+  Wasmtime's CLI, now features the `run` and `wast` sub-commands. [#1798] [#1799]
+- Added new `wasmi_cli` crate features: `wasi`, `wast`, `run`, `portable-dispatch`
+  and `indirect-dispatch`.
+  - PRs: [#1784] [#1787] [#1788]
+
+[Wasmi v2.0.0-beta.10]: #200-beta10---2026-08-10
+[Wasmi v2.0.0-beta.9]: #200-beta9---2026-07-29
+[Wasmi v2.0.0-beta.8]: #200-beta8---2026-07-27
+[Wasmi v2.0.0-beta.7]: #200-beta7---2026-07-09
+[Wasmi v2.0.0-beta.6]: #200-beta6---2026-07-08
+[Wasmi v2.0.0-beta.5]: #200-beta5---2026-07-06
+[Wasmi v2.0.0-beta.4]: #200-beta4---2026-07-01
+[Wasmi v2.0.0-beta.3]: #200-beta3---2026-06-22
+[Wasmi v2.0.0-beta.2]: #200-beta2---2026-03-03
+[Wasmi v2.0.0-beta.1]: #200-beta1---2026-02-19
+[Wasmi v2.0.0-beta.0]: #200-beta0---2026-02-18
+[#1655]: https://github.com/wasmi-labs/wasmi/pull/1655
+[#1747]: https://github.com/wasmi-labs/wasmi/issues/1747
+[#1755]: https://github.com/wasmi-labs/wasmi/pull/1755
+[#1776]: https://github.com/wasmi-labs/wasmi/pull/1776
+[#1784]: https://github.com/wasmi-labs/wasmi/pull/1784
+[#1787]: https://github.com/wasmi-labs/wasmi/pull/1787
+[#1788]: https://github.com/wasmi-labs/wasmi/pull/1788
+[#1798]: https://github.com/wasmi-labs/wasmi/pull/1798
+[#1799]: https://github.com/wasmi-labs/wasmi/pull/1799
+[#1825]: https://github.com/wasmi-labs/wasmi/pull/1825
+[#1827]: https://github.com/wasmi-labs/wasmi/pull/1827
+[#1855]: https://github.com/wasmi-labs/wasmi/pull/1855
+[#1860]: https://github.com/wasmi-labs/wasmi/pull/1860
+[#1893]: https://github.com/wasmi-labs/wasmi/pull/1893
+[#1898]: https://github.com/wasmi-labs/wasmi/pull/1898
+[#1902]: https://github.com/wasmi-labs/wasmi/pull/1902
+[#1915]: https://github.com/wasmi-labs/wasmi/pull/1915
+[#1934]: https://github.com/wasmi-labs/wasmi/pull/1934
+[#1940]: https://github.com/wasmi-labs/wasmi/issues/1940
+[#1947]: https://github.com/wasmi-labs/wasmi/pull/1947
+[#1950]: https://github.com/wasmi-labs/wasmi/pull/1950
+[#1951]: https://github.com/wasmi-labs/wasmi/pull/1951
+[#1959]: https://github.com/wasmi-labs/wasmi/pull/1959
+[#1960]: https://github.com/wasmi-labs/wasmi/pull/1960
+[#1961]: https://github.com/wasmi-labs/wasmi/pull/1961
+[#1962]: https://github.com/wasmi-labs/wasmi/pull/1962
+[#1963]: https://github.com/wasmi-labs/wasmi/pull/1963
+[#1968]: https://github.com/wasmi-labs/wasmi/pull/1968
+[#1985]: https://github.com/wasmi-labs/wasmi/pull/1985
+[#1996]: https://github.com/wasmi-labs/wasmi/pull/1996
+[#1997]: https://github.com/wasmi-labs/wasmi/pull/1997
+[#2013]: https://github.com/wasmi-labs/wasmi/pull/2013
+[#2014]: https://github.com/wasmi-labs/wasmi/pull/2014
+[#2025]: https://github.com/wasmi-labs/wasmi/pull/2025
+
 ## `2.0.0-beta.10` - 2026-08-10
 
 ### Added
