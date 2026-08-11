@@ -46,21 +46,17 @@ For the complete, PR-by-PR record please refer to the respective beta release en
 - Operator dispatch is tail-call based on targets that are known to support it and
   falls back to the portable (loop-based) dispatch automatically via the new
   default-enabled `auto-dispatch` crate feature. [#1968]
-- Re-designed `CodeMap` to be lock-free and append-only and stopped zero-initializing
-  function parameters, both significantly improving Wasm to Wasm call performance.
-  - PRs: [#1898] [#1893] [#2014]
+- Re-designed `CodeMap` to be lock-free and append-only significantly improving Wasm to Wasm call performance.
+  - PRs: [#1898] [#1893]
 - A new `InstanceEntity` layout plus caching greatly improved access to all instance related
   data, namely `Func`, `Global`, `Memory`, `Table`, `Data` and `Elem`.
   - PRs: [#1940] [#1996] [#1997]
   - Despite Wasmi's module independent bytecode, instance access is now as efficient as in
     Wasm3's or Stitch'es executors with their instance-related bytecodes.
   - The `count/globals` benchmark improved by a whopping ~35%.
-
-#### Memory consumption
-
-- `wasmi::Table` elements shrank from 64-bit (or even 128-bit with the `simd` crate feature
-  enabled) to flat 32-bit references, shrinking Wasm tables by a factor of 2-4x.
-  - PRs: [#1747] [#1776]
+  - `wasmi::Table` elements shrank from 64-bit (or even 128-bit with the `simd` crate feature
+    enabled) to flat 32-bit references, shrinking Wasm tables by a factor of 2-4x.
+    - PRs: [#1747] [#1776]
 
 #### Binary artifact size
 
@@ -81,7 +77,7 @@ For the complete, PR-by-PR record please refer to the respective beta release en
 - Fuel costs can now be customized via the new `Config::operator_cost` and
   `Config::fuel_cost` APIs. [#2025]
 
-#### Features & configuration
+#### Crate Features & configuration
 
 - Added support for the Wasm deterministic profile via the new `deterministic` crate feature. [#1947]
 - Added a `Config` option to disallow running the `start` function of Wasm modules. [#1985]
@@ -144,7 +140,6 @@ For the complete, PR-by-PR record please refer to the respective beta release en
 [#1996]: https://github.com/wasmi-labs/wasmi/pull/1996
 [#1997]: https://github.com/wasmi-labs/wasmi/pull/1997
 [#2013]: https://github.com/wasmi-labs/wasmi/pull/2013
-[#2014]: https://github.com/wasmi-labs/wasmi/pull/2014
 [#2025]: https://github.com/wasmi-labs/wasmi/pull/2025
 
 ## `2.0.0-beta.10` - 2026-08-10
