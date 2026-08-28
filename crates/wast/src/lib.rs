@@ -424,6 +424,9 @@ impl WastRunner {
                 return v128_matches_or_err(result, expected)
                     .map_err(|error| error.context("evaluation mismatch of `v128` values"));
             }
+            // An untyped `(ref.null)` matches a null reference of any type.
+            (Val::FuncRef(funcref), WastRetCore::RefNull(None)) => funcref.is_null(),
+            (Val::ExternRef(externref), WastRetCore::RefNull(None)) => externref.is_null(),
             (
                 Val::FuncRef(funcref),
                 WastRetCore::RefNull(Some(HeapType::Abstract {
@@ -438,6 +441,10 @@ impl WastRunner {
                     ..
                 })),
             ) => externref.is_null(),
+            // A `(ref.func)` result pattern expects a non-null function reference.
+            // Wasmi's API does not expose the underlying function index, so any
+            // non-null `funcref` is accepted for `(ref.func $f)` as well.
+            (Val::FuncRef(funcref), WastRetCore::RefFunc(_)) => !funcref.is_null(),
             (Val::ExternRef(externref), WastRetCore::RefExtern(Some(expected))) => {
                 let Nullable::Val(value) = externref else {
                     bail!("unexpected null element: {externref:?}");
@@ -447,7 +454,9 @@ impl WastRunner {
                 };
                 value == expected
             }
-            (Val::ExternRef(externref), WastRetCore::RefExtern(None)) => externref.is_null(),
+            // A `(ref.extern)` result pattern expects a non-null external reference
+            // with an unspecified value.
+            (Val::ExternRef(externref), WastRetCore::RefExtern(None)) => !externref.is_null(),
             _ => false,
         };
         if !is_equal {
