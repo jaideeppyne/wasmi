@@ -430,7 +430,7 @@ fn assert_lazy_callee_resumes(call_op: &str) {
     let engine = Engine::new(&config);
     let mut store = <Store<()>>::new(&engine, ());
     store.set_fuel(10_000).unwrap();
-    let module = Module::new(&engine, &lazy_callee_wasm(call_op)).unwrap();
+    let module = Module::new(&engine, lazy_callee_wasm(call_op)).unwrap();
     let instance = <Linker<()>>::new(&engine)
         .instantiate_and_start(&mut store, &module)
         .unwrap();

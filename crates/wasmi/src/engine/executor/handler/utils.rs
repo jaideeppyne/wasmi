@@ -982,7 +982,6 @@ pub fn return_call_host(
 }
 
 #[inline]
-#[expect(clippy::too_many_arguments)]
 pub fn call_wasm_or_host(
     store: &mut PrunedStore,
     args: &mut Args,
@@ -1032,7 +1031,6 @@ pub fn call_wasm_or_host(
 
 /// Tail-call (`return_call`) twin of [`call_wasm_or_host`].
 #[inline]
-#[expect(clippy::too_many_arguments)]
 pub fn return_call_wasm_or_host(
     store: &mut PrunedStore,
     args: &mut Args,
