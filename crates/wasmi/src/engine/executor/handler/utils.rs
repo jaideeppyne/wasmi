@@ -1025,12 +1025,8 @@ pub fn call_wasm_or_host(
         wasm_func.func_entry(),
         Some(callee_instance),
     )?;
-    (args.instance, args.mem0_ptr, args.mem0_len) = update_instance(
-        args.instance,
-        callee_instance,
-        args.mem0_ptr,
-        args.mem0_len,
-    );
+    (args.instance, args.mem0_ptr, args.mem0_len) =
+        update_instance(args.instance, callee_instance, args.mem0_ptr, args.mem0_len);
     Control::Continue(())
 }
 
@@ -1072,11 +1068,7 @@ pub fn return_call_wasm_or_host(
         wasm_func.func_entry(),
         Some(callee_instance),
     )?;
-    (args.instance, args.mem0_ptr, args.mem0_len) = update_instance(
-        args.instance,
-        callee_instance,
-        args.mem0_ptr,
-        args.mem0_len,
-    );
+    (args.instance, args.mem0_ptr, args.mem0_len) =
+        update_instance(args.instance, callee_instance, args.mem0_ptr, args.mem0_len);
     Control::Continue(())
 }
